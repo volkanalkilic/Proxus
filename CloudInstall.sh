@@ -1,5 +1,37 @@
 #!/bin/bash
 
+echo "
+
+██████╗ ██████╗  ██████╗ ██╗  ██╗██╗   ██╗███████╗
+██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝██║   ██║██╔════╝
+██████╔╝██████╔╝██║   ██║ ╚███╔╝ ██║   ██║███████╗
+██╔═══╝ ██╔══██╗██║   ██║ ██╔██╗ ██║   ██║╚════██║
+██║     ██║  ██║╚██████╔╝██╔╝ ██╗╚██████╔╝███████║
+╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+                                                  
+"
+
+echo "This script is designed for Proxus IIoT Platform. 
+It will perform the following operations:
+
+1. Identify the operating system.
+2. Check if the necessary package managers (Homebrew for MacOS, Chocolatey for Windows) are installed. If not, it will attempt to install them.
+3. Check if Docker and Docker Compose are installed. If not, it will attempt to install them.
+4. Create a basic Docker Compose file.
+5. Start Docker Compose setup.
+
+
+Do you wish to continue? (y/n)"
+
+read user_choice
+
+if [ "$user_choice" != "${user_choice#[Yy]}" ] ;then
+    echo "Continuing with the script..."
+else
+    echo "Exiting without making any changes."
+    exit 0
+fi
+
 # Identify the OS
 OS=$(uname|tr '[:upper:]' '[:lower:]')
 
@@ -69,7 +101,7 @@ then
             brew install docker-compose
             ;;
         'msys' | 'cygwin' | 'win32')
-            # Docker Compose comes with the Docker Desktop installation on Windows.
+            choco install docker-compose
             ;;
         *)
             echo "Unsupported operating system. Please install Docker Compose manually."
@@ -82,19 +114,15 @@ else
     echo "Docker Compose is already installed."
 fi
 
-# Create a basic Docker Compose file.
-echo "Creating Docker Compose file..."
-
-cat > docker-compose.yml << EOF
+# Create a basic docker-compose.yml file
+cat << EOF > docker-compose.yml
 version: '3'
 services:
-  web:
-    image: nginx:alpine
+  proxus:
+    image: your-image
     ports:
-     - "8080:80"
+      - '8080:8080'
 EOF
 
-echo "Docker Compose file created. Starting the application..."
-
 # Run Docker Compose
-docker-compose up
+docker-compose up -d
