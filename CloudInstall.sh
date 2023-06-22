@@ -61,6 +61,21 @@ prompt_or_generate_password() {
     echo "$password"
 }
 
+# Prompt user for password options
+echo -e "${YELLOW}Password Options:${NC}"
+echo -e "1. Enter passwords manually"
+echo -e "2. Generate random passwords"
+echo -e "3. Use default passwords"
+
+read -r password_option
+
+case $password_option in
+    1) RANDOM_PASSWORD_OPTION='N';;
+    2) RANDOM_PASSWORD_OPTION='Y';;
+    3) RANDOM_PASSWORD_OPTION='N';;
+    *) echo -e "${RED}Invalid option. Exiting.${NC}"; exit 1;;
+esac
+
 # Prompt user for configuration variables
 POSTGRES_USER=$(prompt_or_generate_password "Please enter the POSTGRES_USER" "proxus" "$RANDOM_PASSWORD_OPTION")
 POSTGRES_PASSWORD=$(prompt_or_generate_password "Please enter the POSTGRES_PASSWORD" "proxus" "$RANDOM_PASSWORD_OPTION")
@@ -195,12 +210,11 @@ case $(uname | tr '[:upper:]' '[:lower:]') in
 esac
 
 # Save passwords to a text file
-echo "POSTGRES_USER: $POSTGRES_USER" >passwords.txt
-echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD" >>passwords.txt
-echo "ASPNETCORE_ENVIRONMENT: $ASPNETCORE_ENVIRONMENT" >>passwords.txt
-echo "REDIS_PASSWORD: $REDIS_PASSWORD" >>passwords.txt
+PASSWORDS_FILE="$(pwd)/passwords.txt"
+echo "POSTGRES_USER: $POSTGRES_USER" >"$PASSWORDS_FILE"
+echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD" >>"$PASSWORDS_FILE"
+echo "ASPNETCORE_ENVIRONMENT: $ASPNETCORE_ENVIRONMENT" >>"$PASSWORDS_FILE"
+echo "REDIS_PASSWORD: $REDIS_PASSWORD" >>"$PASSWORDS_FILE"
 
 echo -e "${GREEN}Done! You should now see your application running in your default browser.${NC}"
-echo "Password details have been saved to passwords.txt file."
-echo "Please check the passwords.txt file for the generated passwords."
-
+echo "Password details have been saved to: $PASSWORDS_FILE"
