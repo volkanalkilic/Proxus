@@ -1,7 +1,11 @@
 #!/bin/bash
 
-echo "
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
+echo -e "${GREEN}
 ██████╗ ██████╗  ██████╗ ██╗  ██╗██╗   ██╗███████╗
 ██╔══██╗██╔══██╗██╔═══██╗╚██╗██╔╝██║   ██║██╔════╝
 ██████╔╝██████╔╝██║   ██║ ╚███╔╝ ██║   ██║███████╗
@@ -9,9 +13,10 @@ echo "
 ██║     ██║  ██║╚██████╔╝██╔╝ ██╗╚██████╔╝███████║
 ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
                                                   
+${NC}
 "
 
-echo "This script is designed for Proxus IIoT Platform. 
+echo -e "${YELLOW}This script is designed for Proxus IIoT Platform. 
 It will perform the following operations:
 
 1. Identify the operating system.
@@ -20,15 +25,17 @@ It will perform the following operations:
 4. Create a basic Docker Compose file.
 5. Start Docker Compose setup.
 
+WARNING: This script will make changes to your system in order to install the necessary software. 
+Please ensure you have a backup of your data before proceeding.
 
-Do you wish to continue? (y/n)"
+Do you wish to continue? (y/n)${NC}"
 
 read user_choice
 
 if [ "$user_choice" != "${user_choice#[Yy]}" ] ;then
-    echo "Continuing with the script..."
+    echo -e "${GREEN}Continuing with the script...${NC}"
 else
-    echo "Exiting without making any changes."
+    echo -e "${RED}Exiting without making any changes.${NC}"
     exit 0
 fi
 
@@ -41,28 +48,32 @@ case $OS in
         # Check if Homebrew is installed, if not install it.
         if ! command -v brew &> /dev/null
         then
-            echo "Homebrew is not installed. Attempting to install..."
+            echo -e "${YELLOW}Homebrew is not installed. Attempting to install...${NC}"
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         else
-            echo "Homebrew is already installed."
+            echo -e "${GREEN}Homebrew is already installed.${NC}"
         fi
         ;;
     'msys' | 'cygwin' | 'win32')
         # Check if Chocolatey is installed, if not install it.
         if ! command -v choco &> /dev/null
         then
-            echo "Chocolatey is not installed. Attempting to install..."
+            echo -e "${YELLOW}Chocolatey is not installed. Attempting to install...${NC}"
             /bin/bash -c "$(curl -fsSL https://chocolatey.org/install.ps1)"
         else
-            echo "Chocolatey is already installed."
+            echo -e "${GREEN}Chocolatey is already installed.${NC}"
         fi
         ;;
 esac
 
+# Progress bar
+echo -ne "${GREEN}###                               (15%)\r${NC}"
+sleep 1
+
 # Check if Docker is installed
 if ! command -v docker &> /dev/null
 then
-    echo "Docker is not installed. Attempting to install..."
+    echo -e "${YELLOW}Docker is not installed. Attempting to install...${NC}"
     
     # Docker installation based on the OS type
     case $OS in
@@ -77,20 +88,24 @@ then
             choco install docker-desktop
             ;;
         *)
-            echo "Unsupported operating system. Please install Docker manually."
+            echo -e "${RED}Unsupported operating system. Please install Docker manually.${NC}"
             exit 1
             ;;
     esac
 
-    echo "Docker installation complete."
+    echo -e "${GREEN}Docker installation complete.${NC}"
 else
-    echo "Docker is already installed."
+    echo -e "${GREEN}Docker is already installed.${NC}"
 fi
+
+# Progress bar
+echo -ne "${GREEN}#####                             (33%)\r${NC}"
+sleep 1
 
 # Check if Docker Compose is installed
 if ! command -v docker-compose &> /dev/null
 then
-    echo "Docker Compose is not installed. Attempting to install..."
+    echo -e "${YELLOW}Docker Compose is not installed. Attempting to install...${NC}"
 
     case $OS in
         'linux')
@@ -104,15 +119,19 @@ then
             choco install docker-compose
             ;;
         *)
-            echo "Unsupported operating system. Please install Docker Compose manually."
+            echo -e "${RED}Unsupported operating system. Please install Docker Compose manually.${NC}"
             exit 1
             ;;
     esac
 
-    echo "Docker Compose installation complete."
+    echo -e "${GREEN}Docker Compose installation complete.${NC}"
 else
-    echo "Docker Compose is already installed."
+    echo -e "${GREEN}Docker Compose is already installed.${NC}"
 fi
+
+# Progress bar
+echo -ne "${GREEN}#############                     (66%)\r${NC}"
+sleep 1
 
 # Create a basic docker-compose.yml file
 cat << EOF > docker-compose.yml
@@ -126,3 +145,7 @@ EOF
 
 # Run Docker Compose
 docker-compose up -d
+
+# Progress bar
+echo -ne "${GREEN}#######################           (100%)\r${NC}"
+echo -ne '\n'
