@@ -29,70 +29,43 @@ Please ensure you have a backup of your data before proceeding.
 
 Do you wish to continue? (y/n)"
 
-read user_choice
+read -r user_choice
 
-if [ "$user_choice" != "${user_choice#[Yy]}" ]; then
-  echo -e "${GREEN}Continuing with the script...${NC}"
+if [[ $user_choice =~ ^[Yy]$ ]]; then
+    echo -e "${GREEN}Continuing with the script...${NC}"
 else
-  echo -e "${RED}Exiting without making any changes.${NC}"
-  exit 0
+    echo -e "${RED}Exiting without making any changes.${NC}"
+    exit 0
 fi
 
-# Prompt user for configuration variables with default values
-read -p "Please enter the POSTGRES_USER (default: proxus): " POSTGRES_USER
-POSTGRES_USER=${POSTGRES_USER:-proxus}
+# Function to generate a random password
+generate_random_password() {
+    local length=$1
+    LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w "$length" | head -n 1
+}
 
-read -p "Please enter the POSTGRES_PASSWORD (default: proxus): " POSTGRES_PASSWORD
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-proxus}
+# Function to prompt for password or generate randomly
+prompt_or_generate_password() {
+    local prompt=$1
+    local default=$2
+    local random=$3
+    local password
 
-read -p "Please enter the ASPNETCORE_ENVIRONMENT (Development, Staging, Production, default: Development): " ASPNETCORE_ENVIRONMENT
-ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+    if [[ $random =~ ^[Yy]$ ]]; then
+        password=$(generate_random_password 16)
+    else
+        read -p "$prompt (default: $default): " password
+        password=${password:-$default}
+    fi
 
-# Identify the OS
-OS=$(uname | tr '[:upper:]' '[:lower:]')
+    echo "$password"
+}
 
-# Install package manager based on the OS type
-case $OS in
-'darwin')
-  # Check if Homebrew is installed, if not install it.
-  if ! command -v brew &>/dev/null; then
-    echo -e "${YELLOW}Homebrew is not installed. Attempting to install...${NC}"
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  else
-    echo -e "${GREEN}Homebrew is already installed.${NC}"
-  fi
-  ;;
-'msys' | 'cygwin' | 'win32')
-  # Check if Chocolatey is installed, if not install it.
-  if ! command -v choco &>/dev/null; then
-    echo -e "${YELLOW}Chocolatey is not installed. Attempting to install...${NC}"
-    /bin/bash -c "$(curl -fsSL https://chocolatey.org/install.ps1)"
-  else
-    echo -e "${GREEN}Chocolatey is already installed.${NC}"
-  fi
-  ;;
-esac
-
-# Install Docker and Docker Compose if not already installed
-if ! command -v docker &>/dev/null; then
-  echo -e "${YELLOW}Docker is not installed. Attempting to install...${NC}"
-  case $OS in
-  'darwin') brew install docker ;;
-  'msys' | 'cygwin' | 'win32') choco install docker ;;
-  esac
-else
-  echo -e "${GREEN}Docker is already installed.${NC}"
-fi
-
-if ! command -v docker-compose &>/dev/null; then
-  echo -e "${YELLOW}Docker Compose is not installed. Attempting to install...${NC}"
-  case $OS in
-  'darwin') brew install docker-compose ;;
-  'msys' | 'cygwin' | 'win32') choco install docker-compose ;;
-  esac
-else
-  echo -e "${GREEN}Docker Compose is already installed.${NC}"
-fi
+# Prompt user for configuration variables
+POSTGRES_USER=$(prompt_or_generate_password "Please enter the POSTGRES_USER" "proxus" "$RANDOM_PASSWORD_OPTION")
+POSTGRES_PASSWORD=$(prompt_or_generate_password "Please enter the POSTGRES_PASSWORD" "proxus" "$RANDOM_PASSWORD_OPTION")
+ASPNETCORE_ENVIRONMENT=$(prompt_or_generate_password "Please enter the ASPNETCORE_ENVIRONMENT" "Development" "$RANDOM_PASSWORD_OPTION")
+REDIS_PASSWORD=$(prompt_or_generate_password "Please enter the REDIS_PASSWORD" "proxus" "$RANDOM_PASSWORD_OPTION")
 
 # Create docker-compose.yml file
 cat <<EOF >docker-compose.yml
@@ -106,7 +79,8 @@ services:
     ports:
       - "6379:6379"
     environment:
-      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+      - ALLOW_EMPTY_PASSWORD=no
     networks:
       - proxus
   
@@ -213,11 +187,20 @@ docker-compose up -d
 IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 # Open browser
-case $OS in
-'darwin') open "http://$IP_ADDRESS:8080" ;;
-'linux') xdg-open "http://$IP_ADDRESS:8080" ;;
-'msys' | 'cygwin' | 'win32') start "http://$IP_ADDRESS:8080" ;;
-*) echo "Unsupported operating system. Please manually open the following URL in your browser: http://$IP_ADDRESS:8080" ;;
+case $(uname | tr '[:upper:]' '[:lower:]') in
+    'darwin') open "http://$IP_ADDRESS:8080" ;;
+    'linux') xdg-open "http://$IP_ADDRESS:8080" ;;
+    'msys' | 'cygwin' | 'win32') start "http://$IP_ADDRESS:8080" ;;
+    *) echo "Unsupported operating system. Please manually open the following URL in your browser: http://$IP_ADDRESS:8080" ;;
 esac
 
+# Save passwords to a text file
+echo "POSTGRES_USER: $POSTGRES_USER" >passwords.txt
+echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD" >>passwords.txt
+echo "ASPNETCORE_ENVIRONMENT: $ASPNETCORE_ENVIRONMENT" >>passwords.txt
+echo "REDIS_PASSWORD: $REDIS_PASSWORD" >>passwords.txt
+
 echo -e "${GREEN}Done! You should now see your application running in your default browser.${NC}"
+echo "Password details have been saved to passwords.txt file."
+echo "Please check the passwords.txt file for the generated passwords."
+
