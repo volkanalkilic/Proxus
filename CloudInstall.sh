@@ -15,17 +15,15 @@ echo "
                                                   
 "
 
-echo "This script is designed for Proxus IIoT Platform. 
+echo "This script is designed to install the Proxus IIoT Platform. 
 It will perform the following operations:
 
 1. Identify the operating system.
 2. Check if the necessary package managers (Homebrew for MacOS, Chocolatey for Windows) are installed. If not, it will attempt to install them.
 3. Check if Docker and Docker Compose are installed. If not, it will attempt to install them.
-4. Create a basic Docker Compose file.
+4. Create Proxus Docker Compose file.
 5. Start Docker Compose setup.
 
-WARNING: This script will make changes to your system in order to install the necessary software. 
-Please ensure you have a backup of your data before proceeding.
 
 Do you wish to continue? (y/n)"
 
@@ -85,6 +83,7 @@ REDIS_PASSWORD=$(prompt_or_generate_password "Please enter the REDIS_PASSWORD" "
 # Create docker-compose.yml file
 cat <<EOF >docker-compose.yml
 version: '3.8'
+name: Proxus
 services:
 
   redis:
@@ -115,9 +114,9 @@ services:
       - "5442:5442"
     environment:
       # - PGDATA=/var/lib/postgresql/data/timescaledb
-      - POSTGRES_DB=proxus
-      - POSTGRES_USER=proxus
-      - POSTGRES_PASSWORD=proxus
+      - POSTGRES_DB=Proxus
+      - POSTGRES_USER=POSTGRES_USER
+      - POSTGRES_PASSWORD=POSTGRES_PASSWORD
   
   proxus-ui:
     restart: always
@@ -143,7 +142,12 @@ services:
       # - ASPNETCORE_HTTPS_PORT=443
       - CONSUL_HTTP_ADDR=consul:8500
       - AdvertisedHost=proxus-ui
-    command: [ "./Proxus.Blazor.Server",  "--GatewayID=1",  "--GrpcInterfaceBinding=Localhost", "RedisConnection=redis:6379", "ClusterProvider=Redis"]
+    command: [ "./Proxus.Blazor.Server",
+         "--GatewayID=1",  
+         "--GrpcInterfaceBinding=Localhost", 
+         "RedisConnection=redis:6379, password=$REDIS_PASSWORD", 
+         "ClusterProvider=Redis",
+         "ConnectionString=Server=localhost;Port=5442;User ID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
   
   proxus-server:
     restart: always
@@ -156,8 +160,6 @@ services:
       - proxus
     ports:
       - "1883:1883"
-    labels:
-      kompose.serviceaccount-name: "Proxus"
     volumes:
       - type: volume
         source: config
@@ -167,7 +169,12 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - CONSUL_HTTP_ADDR=consul:8500
       - AdvertisedHost=proxus-server
-    command: [ "./Proxus.Server", "--GatewayID=1",  "--GrpcInterfaceBinding=Localhost", "RedisConnection=redis:6379",  "ClusterProvider=Redis"]
+    command: [ "./Proxus.Server", 
+         "--GatewayID=1",  
+         "--GrpcInterfaceBinding=Localhost", 
+         "RedisConnection=redis:6379, password=$REDIS_PASSWORD", 
+         "ClusterProvider=Redis",
+         "ConnectionString=Server=localhost;Port=5442;User ID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
   
   proxus-api:
     restart: always
@@ -199,7 +206,7 @@ EOF
 docker-compose up -d
 
 # Get machine's IP address
-IP_ADDRESS=$(hostname -I | awk '{print $1}')
+IP_ADDRESS="localhost"
 
 # Open browser
 case $(uname | tr '[:upper:]' '[:lower:]') in
