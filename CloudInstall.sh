@@ -83,7 +83,7 @@ REDIS_PASSWORD=$(prompt_or_generate_password "Please enter the REDIS_PASSWORD" "
 # Create docker-compose.yml file
 cat <<EOF >docker-compose.yml
 version: '3.8'
-name: Proxus
+name: proxus
 services:
 
   redis:
@@ -192,6 +192,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8081
+    command: [ "./Proxus.WebApi",
+             "ConnectionString=Server=localhost;Port=5442;User ID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
+      
 networks:
   proxus:
     driver: bridge
