@@ -1,4 +1,4 @@
-#!/bin/bash
+ü#!/bin/bash
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -79,6 +79,66 @@ POSTGRES_USER=$(prompt_or_generate_password "Please enter the POSTGRES_USER" "pr
 POSTGRES_PASSWORD=$(prompt_or_generate_password "Please enter the POSTGRES_PASSWORD" "proxus" "$RANDOM_PASSWORD_OPTION")
 ASPNETCORE_ENVIRONMENT=$(prompt_or_generate_password "Please enter the ASPNETCORE_ENVIRONMENT" "Development" "$RANDOM_PASSWORD_OPTION")
 REDIS_PASSWORD=$(prompt_or_generate_password "Please enter the REDIS_PASSWORD" "proxus" "$RANDOM_PASSWORD_OPTION")
+
+
+# Function to install Docker on Windows
+install_docker_windows() {
+    # Generate PowerShell script
+    cat > install_docker.ps1 <<EOF
+# Check if running as administrator
+\$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+if (-NOT \$IsAdmin) {
+    Write-Output "Please run this script as an Administrator!"
+    exit 1
+}
+
+# Check if Docker is installed
+if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
+    # Install Chocolatey if not already installed
+    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+    }
+
+    # Install Docker
+    choco install docker-desktop -y
+} else {
+    Write-Output "Docker is already installed."
+}
+EOF
+
+    # Run the PowerShell script
+    powershell -ExecutionPolicy Bypass -File ./install_docker.ps1
+}
+
+# Determine the operating system
+OS="$(uname)"
+
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "Docker is not installed. Attempting to install..."
+    # Install Docker
+    case "$OS" in
+        "Linux")
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+            ;;
+        "Darwin")
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+            brew cask install docker
+            ;;
+        "Windows_NT")
+            install_docker_windows
+            ;;
+        *)
+            echo "Unsupported operating system: $OS"
+            exit 1
+            ;;
+    esac
+else
+    echo "Docker is already installed."
+fi
 
 # Create docker-compose.yml file
 cat <<EOF >docker-compose.yml
