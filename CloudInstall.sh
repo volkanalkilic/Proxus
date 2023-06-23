@@ -1,4 +1,4 @@
-ü#!/bin/bash
+#!/bin/bash
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -128,7 +128,7 @@ if ! command -v docker &> /dev/null; then
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
             brew cask install docker
             ;;
-        "Windows_NT")
+        "MINGW"*|"CYGWIN"*|"MSYS"*)
             install_docker_windows
             ;;
         *)
