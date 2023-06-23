@@ -203,7 +203,7 @@ volumes:
 EOF
 
 # Run Docker Compose
-docker-compose up -d
+docker compose up -d
 
 # Get machine's IP address
 IP_ADDRESS="localhost"
