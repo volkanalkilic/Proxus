@@ -102,8 +102,7 @@ if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
     }
 
     # Install Docker
-    choco install docker-engine -y
-    choco install docker-compose -y
+    choco install docker-desktop -y
 } else {
     Write-Output "Docker is already installed."
 }
