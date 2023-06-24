@@ -177,8 +177,8 @@ services:
     environment:
       # - PGDATA=/var/lib/postgresql/data/timescaledb
       - POSTGRES_DB=Proxus
-      - POSTGRES_USER=POSTGRES_USER
-      - POSTGRES_PASSWORD=POSTGRES_PASSWORD
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
   
   proxus-ui:
     restart: always
