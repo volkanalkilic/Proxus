@@ -80,6 +80,7 @@ POSTGRES_PASSWORD=$(prompt_or_generate_password "Please enter the POSTGRES_PASSW
 ASPNETCORE_ENVIRONMENT=$(prompt_or_generate_password "Please enter the ASPNETCORE_ENVIRONMENT" "Development" "$RANDOM_PASSWORD_OPTION")
 REDIS_PASSWORD=$(prompt_or_generate_password "Please enter the REDIS_PASSWORD" "proxus" "$RANDOM_PASSWORD_OPTION")
 
+
 # Function to install Docker on Windows
 install_docker_windows() {
     # Generate PowerShell script
@@ -93,15 +94,18 @@ if (-NOT \$IsAdmin) {
 
 # Check if Docker is installed
 if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
-    # Install Chocolatey if not already installed
-    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-    }
-
-    # Install Docker
-    choco install docker-desktop -y
+      Write-Output "Please install Docker for Windows first!"
+      exit 1
+      
+#    # Install Chocolatey if not already installed
+#    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+#        Set-ExecutionPolicy Bypass -Scope Process -Force
+#        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+#        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+#    }
+#
+#    # Install Docker
+#    choco install docker-desktop -y
 } else {
     Write-Output "Docker is already installed."
 }
@@ -142,7 +146,6 @@ fi
 # Create docker-compose.yml file
 cat <<EOF >docker-compose.yml
 version: '3.8'
-name: proxus
 services:
 
   redis:
@@ -206,7 +209,7 @@ services:
          "--GrpcInterfaceBinding=Localhost", 
          "RedisConnection=redis:6379, password=$REDIS_PASSWORD", 
          "ClusterProvider=Redis",
-         "ConnectionString=Server=localhost;Port=5442;User ID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
+         "ConnectionString=Server=localhost;Port=5442;UserID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
   
   proxus-server:
     restart: always
@@ -233,7 +236,7 @@ services:
          "--GrpcInterfaceBinding=Localhost", 
          "RedisConnection=redis:6379, password=$REDIS_PASSWORD", 
          "ClusterProvider=Redis",
-         "ConnectionString=Server=localhost;Port=5442;User ID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
+         "ConnectionString=Server=localhost;Port=5442;UserID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
   
   proxus-api:
     restart: always
@@ -252,7 +255,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8081
     command: [ "./Proxus.WebApi",
-             "ConnectionString=Server=localhost;Port=5442;User ID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
+             "ConnectionString=Server=localhost;Port=5442;UserID=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Database=Proxus;"]
       
 networks:
   proxus:
@@ -265,18 +268,10 @@ volumes:
 EOF
 
 # Run Docker Compose
-docker compose up -d
+docker compose -p="proxus" up -d
 
 # Get machine's IP address
 IP_ADDRESS="localhost"
-
-# Open browser
-case $(uname | tr '[:upper:]' '[:lower:]') in
-    'darwin') open "http://$IP_ADDRESS:8080" ;;
-    'linux') xdg-open "http://$IP_ADDRESS:8080" ;;
-    'msys' | 'cygwin' | 'win32') start "http://$IP_ADDRESS:8080" ;;
-    *) echo "Unsupported operating system. Please manually open the following URL in your browser: http://$IP_ADDRESS:8080" ;;
-esac
 
 # Save passwords to a text file
 PASSWORDS_FILE="$(pwd)/passwords.txt"
@@ -285,5 +280,5 @@ echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD" >>"$PASSWORDS_FILE"
 echo "ASPNETCORE_ENVIRONMENT: $ASPNETCORE_ENVIRONMENT" >>"$PASSWORDS_FILE"
 echo "REDIS_PASSWORD: $REDIS_PASSWORD" >>"$PASSWORDS_FILE"
 
-echo -e "${GREEN}Done! You should now see your application running in your default browser.${NC}"
+echo -e "${GREEN}Done! You should now see Proxus in your default browser: http://$IP_ADDRESS:8080${NC}"
 echo "Password details have been saved to: $PASSWORDS_FILE"
