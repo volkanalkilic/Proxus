@@ -80,7 +80,6 @@ POSTGRES_PASSWORD=$(prompt_or_generate_password "Please enter the POSTGRES_PASSW
 ASPNETCORE_ENVIRONMENT=$(prompt_or_generate_password "Please enter the ASPNETCORE_ENVIRONMENT" "Development" "$RANDOM_PASSWORD_OPTION")
 REDIS_PASSWORD=$(prompt_or_generate_password "Please enter the REDIS_PASSWORD" "proxus" "$RANDOM_PASSWORD_OPTION")
 
-
 # Function to install Docker on Windows
 install_docker_windows() {
     # Generate PowerShell script
